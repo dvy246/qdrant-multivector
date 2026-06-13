@@ -4,13 +4,13 @@ These tests start the real FastAPI app using TestClient, mock the Qdrant
 client and embedder dependencies via overrides to use the real local Qdrant
 and the deterministic embedder.
 """
+from __future__ import annotations
 from PIL import Image
 import numpy as np
-from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
-  from commerce_engine.fixtures import ensure_fixture_images
+from commerce_engine.fixtures import ensure_fixture_images
 from commerce_engine.api import app, get_client, get_embedder
 
 from commerce_engine.embeddings import DeterministicEmbedder

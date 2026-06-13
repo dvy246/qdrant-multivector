@@ -51,7 +51,7 @@ ignore = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "-q"
 
 [tool.hatch.build.targets.wheel]

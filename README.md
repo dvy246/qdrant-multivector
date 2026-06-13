@@ -23,7 +23,7 @@ flowchart LR
 - `qdrant-client>=1.14.2` is used because Qdrant's ColBERT reranking examples use this client range.
 - FastEmbed `answerdotai/answerai-colbert-small-v1` creates 96-dimensional late-interaction token matrices.
 - FastEmbed `BAAI/bge-small-en-v1.5` embeds extracted review findings into 384-dimensional semantic finding vectors.
-- Hugging Face `google/vit-base-patch16-224-in21k` creates real ViT patch tokens; the code stores patch-level vectors rather than one pooled image vector.
+- Hugging Face `google/siglip-base-patch16-224` creates aligned vision and text embeddings; the code stores the `CLS` vector for images, which is directly comparable to text embeddings.
 - FastAPI and Typer expose the system through HTTP and CLI.
 
 ## 3. Project Structure
@@ -56,7 +56,7 @@ The collection uses named multivectors:
 Payload indexes are created for `brand`, `category`, `region`, `color`, `size`, `product_id`, `availability`, `price`, and `eco_score`. Verified APIs used: `create_collection`, `create_payload_index`, `upsert`, `query_points`, `update_vectors`, `set_payload`, and `delete`.
 
 ## 6. Embedding Pipelines
-- Visual pipeline: image -> ViT image processor -> `ViTModel.last_hidden_state` -> remove CLS token -> L2 normalize patch tokens -> store all patch vectors.
+- Visual pipeline: image -> SigLIP image processor -> `SiglipVisionModel` -> extract `CLS` token -> L2 normalize -> store as single 768-d vector.
 - Text/spec pipeline: title/spec text -> FastEmbed ColBERT -> token-level matrix -> store without pooling.
 - Review pipeline: reviews -> semantic finding extraction -> BGE small embeddings per finding -> store as a matrix.
 
@@ -70,7 +70,7 @@ EMBEDDING_BACKEND=deterministic uv run engine init-qdrant
 EMBEDDING_BACKEND=deterministic uv run engine ingest --fixtures
 EMBEDDING_BACKEND=deterministic uv run engine search "Waterproof black hiking boots with good arch support" --user user_a
 ```
-Use `EMBEDDING_BACKEND=production` for real FastEmbed and ViT model inference.
+Use `EMBEDDING_BACKEND=production` for real FastEmbed and SigLIP model inference.
 
 ## 8. Search Flow
 The query `Waterproof black hiking boots with good arch support` decomposes as:
@@ -123,7 +123,7 @@ The API listens on `http://localhost:8000`.
 uv run ruff check .
 uv run pytest
 ```
-The default test suite avoids network/model downloads by using deterministic embeddings. Production smoke tests should run after dependencies and models are available.
+The default test suite avoids network/model downloads by using deterministic embeddings. Integration and E2E API tests can run against a real Qdrant instance.
 
 ## 15. Deployment
 Set `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_COLLECTION`, and `EMBEDDING_BACKEND=production`. Keep Qdrant storage persistent, monitor latency and recall, and pin model versions before client deployment.
@@ -135,7 +135,7 @@ This README intentionally follows the client-requested 17-section order. Referen
 - Qdrant payload indexes: https://qdrant.tech/documentation/manage-data/indexing/
 - Qdrant quantization: https://qdrant.tech/documentation/manage-data/quantization/
 - FastEmbed ColBERT: https://qdrant.tech/documentation/fastembed/fastembed-colbert/
-- Hugging Face ViT: https://huggingface.co/docs/transformers/model_doc/vit
+- Hugging Face SigLIP: https://huggingface.co/docs/transformers/model_doc/siglip
 
 ## 17. Complete Source Code
 The complete source code is in this repository under `src/commerce_engine` with tests under `tests`. No pseudo-code or placeholder functions are used; model-backed production paths load FastEmbed and Hugging Face models lazily at runtime, while deterministic embeddings exist for repeatable tests and offline smoke validation.

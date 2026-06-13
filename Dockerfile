@@ -1,18 +1,36 @@
-FROM python:3.12-slim
+# Stage 1: Builder
+FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential curl && rm -rf /var/lib/apt/lists/*
+WORKDIR /build
 
-RUN useradd -m -u 1000 appuser
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 COPY pyproject.toml README.md ./
 COPY src ./src
+
 RUN pip install --upgrade pip && pip install .
 
+# Stage 2: Final runtime image
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+
+# Copy the compiled virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Create and switch to non-root user
+RUN useradd -m -u 1000 appuser
 USER appuser
 
 EXPOSE 8000
