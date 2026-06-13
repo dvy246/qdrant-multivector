@@ -8,6 +8,7 @@ from rich import print_json
 
 from commerce_engine.benchmark import result_dict, run_benchmark
 from commerce_engine.config import get_settings
+from commerce_engine.benchmark import write_benchmark_report
 from commerce_engine.embeddings import create_embedder
 from commerce_engine.fixtures import ensure_fixture_images
 from commerce_engine.ingest import ingest_products
@@ -94,7 +95,6 @@ def update_image(product_id: str, image_path: Path) -> None:
 @app.command("benchmark")
 def benchmark(profile: str = "baseline") -> None:
     settings, client, embedder = _deps()
-    from commerce_engine.benchmark import write_benchmark_report
     result = run_benchmark(client, settings.qdrant_collection, Path.cwd(), embedder, profile)
     write_benchmark_report(result, Path.cwd())
     print_json(json.dumps(result_dict(result)))

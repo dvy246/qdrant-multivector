@@ -176,7 +176,7 @@ def health() -> HealthResponse:
 )
 def ready(client: QdrantClient = Depends(get_client)):
     settings = get_settings()
-    errors = validate_startup(settings)
+    errors = validate_startup(settings, client)
     if errors:
         return ReadyResponse(
             status="not_ready",

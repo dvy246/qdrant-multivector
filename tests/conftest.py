@@ -12,18 +12,13 @@ TEST_COLLECTION = "test_commerce_products"
 
 
 def qdrant_available() -> bool:
-    """Check if Qdrant is reachable at localhost:6333."""
-    try:
-        client = QdrantClient(url=QDRANT_URL, timeout=2)
-        client.get_collections()
-        return True
-    except Exception:
-        return False
+    """Always return True because we support fallback to in-memory Qdrant client."""
+    return True
 
 
 requires_qdrant = pytest.mark.skipif(
     not qdrant_available(),
-    reason="Qdrant not available at localhost:6333",
+    reason="Qdrant capabilities not available",
 )
 
 
@@ -35,8 +30,18 @@ def embedder():
 
 @pytest.fixture
 def qdrant_client():
-    """Return a QdrantClient connected to local Qdrant, if available."""
-    return QdrantClient(url=QDRANT_URL)
+    """Return a QdrantClient connected to local Qdrant, or in-memory fallback."""
+    try:
+        # Try connecting to local server first
+        client = QdrantClient(url=QDRANT_URL, timeout=1)
+        client.get_collections()
+        return client
+    except Exception:
+        # Fallback to in-memory client
+        client = QdrantClient(location=":memory:")
+        from commerce_engine.qdrant_store import recreate_collection
+        recreate_collection(client, "commerce_products")
+        return client
 
 
 @pytest.fixture

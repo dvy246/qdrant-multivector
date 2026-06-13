@@ -5,10 +5,10 @@
 | Metric | Value |
 |--------|-------|
 | Queries | 104 |
-| Mean Latency | 3.3 ms |
-| P50 Latency | 3.0 ms |
-| P95 Latency | 5.6 ms |
-| P99 Latency | 6.2 ms |
+| Mean Latency | 1.3 ms |
+| P50 Latency | 1.3 ms |
+| P95 Latency | 1.6 ms |
+| P99 Latency | 1.8 ms |
 
 ## Retrieval Quality
 

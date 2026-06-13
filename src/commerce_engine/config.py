@@ -21,22 +21,21 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
 
-def validate_startup(settings: "Settings") -> list[str]:
+def validate_startup(settings: "Settings", client=None) -> list[str]:
     """Verify runtime dependencies are available. Returns list of errors (empty = OK)."""
     errors: list[str] = []
 
     # Check Qdrant connectivity
     try:
-        from commerce_engine.qdrant_store import make_client
-
-        client = make_client(settings.qdrant_url, settings.qdrant_api_key)
+        if client is None:
+            from commerce_engine.qdrant_store import make_client
+            client = make_client(settings.qdrant_url, settings.qdrant_api_key)
         client.get_collections()
     except Exception as exc:
         errors.append(f"Qdrant unreachable at {settings.qdrant_url}: {exc}")
 
     # Check collection existence (warning, not fatal)
     try:
-        client = make_client(settings.qdrant_url, settings.qdrant_api_key)
         if not client.collection_exists(collection_name=settings.qdrant_collection):
             errors.append(
                 f"Collection '{settings.qdrant_collection}' not found. "
