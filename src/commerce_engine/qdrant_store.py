@@ -16,8 +16,10 @@ def make_client(url: str, api_key: str | None = None) -> QdrantClient:
     return QdrantClient(url=url, api_key=api_key)
 
 
-def vector_params(size: int, *, hnsw_m: int | None = None) -> models.VectorParams:
-    hnsw_config = models.HnswConfigDiff(m=hnsw_m) if hnsw_m is not None else None
+def vector_params(size: int, *, hnsw_m: int | None = None, hnsw_ef_construct: int | None = None) -> models.VectorParams:
+    hnsw_config = None
+    if hnsw_m is not None or hnsw_ef_construct is not None:
+        hnsw_config = models.HnswConfigDiff(m=hnsw_m, ef_construct=hnsw_ef_construct)
     return models.VectorParams(
         size=size,
         distance=models.Distance.COSINE,

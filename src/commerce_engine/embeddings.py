@@ -33,7 +33,12 @@ def _unit_vector(seed: str, dim: int) -> list[float]:
 
 
 class DeterministicEmbedder:
-    """Small deterministic embedder for unit tests and offline smoke runs."""
+    """Small deterministic embedder for unit tests and offline smoke runs.
+
+    Produces the same shapes as ProductionEmbedder:
+    - image_patches() returns 1 vector per image (matching SigLIP CLS)
+    - visual_query() returns 1 vector per query (matching SigLIP text tower)
+    """
 
     def text_late(self, texts: list[str]) -> list[list[list[float]]]:
         matrices: list[list[list[float]]] = []
@@ -46,20 +51,16 @@ class DeterministicEmbedder:
         return [_unit_vector(f"review:{finding.lower()}", REVIEW_DIM) for finding in findings]
 
     def image_patches(self, image_path: Path) -> list[list[float]]:
+        """Return 1 vector per image, matching production SigLIP CLS behavior."""
         image = Image.open(image_path).convert("RGB").resize((224, 224))
         arr = np.asarray(image, dtype=np.float32)
-        patches: list[list[float]] = []
-        for y in range(0, 224, 56):
-            for x in range(0, 224, 56):
-                patch = arr[y : y + 56, x : x + 56]
-                mean = patch.mean(axis=(0, 1))
-                seed = f"image:{image_path.name}:{mean[0]:.1f}:{mean[1]:.1f}:{mean[2]:.1f}:{x}:{y}"
-                patches.append(_unit_vector(seed, VISION_DIM))
-        return patches
+        mean = arr.mean(axis=(0, 1))
+        seed = f"siglip-cls:{image_path.name}:{mean[0]:.1f}:{mean[1]:.1f}:{mean[2]:.1f}"
+        return [_unit_vector(seed, VISION_DIM)]
 
     def visual_query(self, query: str) -> list[list[float]]:
-        tokens = query.lower().split()[:16] or [query]
-        return [_unit_vector(f"visual-query:{token}", VISION_DIM) for token in tokens]
+        """Return 1 vector per query, matching production SigLIP text tower."""
+        return [_unit_vector(f"visual-query:{query.lower()}", VISION_DIM)]
 
 
 class ProductionEmbedder:
@@ -67,17 +68,17 @@ class ProductionEmbedder:
         self,
         text_model: str,
         review_model: str,
-        vision_model: str,
         device: str = "cpu",
+        vision_alignment_model: str = "google/siglip-base-patch16-224",
     ) -> None:
         self.text_model_name = text_model
         self.review_model_name = review_model
-        self.vision_model_name = vision_model
+        self.vision_alignment_model_name = vision_alignment_model
         self.device = device
         self._late_model = None
         self._review_model = None
-        self._vision_processor = None
-        self._vision_model = None
+        self._siglip_model = None
+        self._siglip_processor = None
 
     @property
     def late_model(self):
@@ -95,16 +96,20 @@ class ProductionEmbedder:
             self._review_model = TextEmbedding(self.review_model_name)
         return self._review_model
 
-    def _load_vision(self) -> None:
-        if self._vision_model is not None:
+    def _load_siglip(self) -> None:
+        if self._siglip_model is not None:
             return
         import torch
-        from transformers import AutoImageProcessor, ViTModel
+        from transformers import AutoModel, AutoProcessor
 
-        self._vision_processor = AutoImageProcessor.from_pretrained(self.vision_model_name)
-        self._vision_model = ViTModel.from_pretrained(self.vision_model_name)
-        self._vision_model.eval()
-        self._vision_model.to(torch.device(self.device))
+        self._siglip_processor = AutoProcessor.from_pretrained(
+            self.vision_alignment_model_name
+        )
+        self._siglip_model = AutoModel.from_pretrained(
+            self.vision_alignment_model_name
+        )
+        self._siglip_model.eval()
+        self._siglip_model.to(torch.device(self.device))
 
     def text_late(self, texts: list[str]) -> list[list[list[float]]]:
         return [embedding.astype(float).tolist() for embedding in self.late_model.embed(texts)]
@@ -115,34 +120,56 @@ class ProductionEmbedder:
         return [embedding.astype(float).tolist() for embedding in self.review_model.embed(findings)]
 
     def image_patches(self, image_path: Path) -> list[list[float]]:
-        self._load_vision()
+        """Generate SigLIP vision CLS embedding for cross-modal alignment.
+
+        Returns a single-row matrix [1×768] containing the SigLIP global
+        vision embedding, which lives in the same contrastive space as
+        SigLIP text embeddings produced by visual_query().
+
+        Multiple images per product accumulate as additional rows via
+        append_image(), giving MAX_SIM multiple image representations
+        to match against — all in the same embedding space.
+        """
+        self._load_siglip()
         import torch
 
         image = Image.open(image_path).convert("RGB")
-        inputs = self._vision_processor(images=image, return_tensors="pt")
-        inputs = {key: value.to(self.device) for key, value in inputs.items()}
+        siglip_inputs = self._siglip_processor(images=image, return_tensors="pt")
+        siglip_inputs = {k: v.to(self.device) for k, v in siglip_inputs.items()}
         with torch.no_grad():
-            output = self._vision_model(**inputs)
-        patch_tokens = output.last_hidden_state[:, 1:, :].squeeze(0)
-        patch_tokens = torch.nn.functional.normalize(patch_tokens, dim=1)
-        return patch_tokens.cpu().numpy().astype(float).tolist()
+            siglip_vision = self._siglip_model.get_image_features(**siglip_inputs)
+        siglip_cls = torch.nn.functional.normalize(siglip_vision, dim=1).squeeze(0)
+        return [siglip_cls.cpu().numpy().astype(float).tolist()]
 
     def visual_query(self, query: str) -> list[list[float]]:
-        # For production image-query alignment, replace this with a CLIP/SigLIP text tower.
-        # The project still stores real ViT patch matrices for product images.
-        return [
-            _unit_vector(f"visual-intent:{token}", VISION_DIM)
-            for token in query.lower().split()
-        ]
+        """Encode visual query text using SigLIP text tower.
+
+        Returns a 1-row matrix with the SigLIP text CLS embedding, which lives
+        in the same contrastive space as the SigLIP vision CLS prepended to
+        document visual vectors. MAX_SIM naturally aligns these.
+        """
+        self._load_siglip()
+        import torch
+
+        text_inputs = self._siglip_processor(
+            text=[query], return_tensors="pt", padding=True, truncation=True
+        )
+        text_inputs = {k: v.to(self.device) for k, v in text_inputs.items()}
+        with torch.no_grad():
+            text_features = self._siglip_model.get_text_features(**text_inputs)
+        text_cls = torch.nn.functional.normalize(text_features, dim=1).squeeze(0)
+        return [text_cls.cpu().numpy().astype(float).tolist()]
 
 
 def create_embedder(
     backend: str,
     text_model: str,
     review_model: str,
-    vision_model: str,
     device: str = "cpu",
+    vision_alignment_model: str = "google/siglip-base-patch16-224",
 ) -> Embedder:
     if backend == "deterministic":
         return DeterministicEmbedder()
-    return ProductionEmbedder(text_model, review_model, vision_model, device)
+    return ProductionEmbedder(
+        text_model, review_model, device, vision_alignment_model
+    )

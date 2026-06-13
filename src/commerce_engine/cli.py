@@ -26,8 +26,8 @@ def _deps():
         settings.embedding_backend,
         settings.text_late_model,
         settings.review_model,
-        settings.vision_model,
         settings.device,
+        settings.vision_alignment_model,
     )
     return settings, client, embedder
 
@@ -94,5 +94,7 @@ def update_image(product_id: str, image_path: Path) -> None:
 @app.command("benchmark")
 def benchmark(profile: str = "baseline") -> None:
     settings, client, embedder = _deps()
+    from commerce_engine.benchmark import write_benchmark_report
     result = run_benchmark(client, settings.qdrant_collection, Path.cwd(), embedder, profile)
+    write_benchmark_report(result, Path.cwd())
     print_json(json.dumps(result_dict(result)))

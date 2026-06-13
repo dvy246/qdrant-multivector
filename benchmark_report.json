@@ -1,0 +1,16 @@
+{
+  "profile": "baseline",
+  "query_count": 104,
+  "mean_latency_ms": 3.0634795962564216,
+  "p50_latency_ms": 2.9117080121068284,
+  "p95_latency_ms": 3.8532919861609116,
+  "p99_latency_ms": 5.826709006214514,
+  "recall_at_1": 0.4230769230769231,
+  "recall_at_3": 0.6346153846153846,
+  "recall_at_5": 1.0,
+  "mrr": 0.6169871794871795,
+  "ndcg": 0.7113875411367123,
+  "storage_size_bytes": 0,
+  "points_count": 0,
+  "vectors_count": 0
+}

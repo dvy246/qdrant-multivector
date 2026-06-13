@@ -14,10 +14,38 @@ class Settings(BaseSettings):
     embedding_backend: Literal["production", "deterministic"] = "production"
     text_late_model: str = "answerdotai/answerai-colbert-small-v1"
     review_model: str = "BAAI/bge-small-en-v1.5"
-    vision_model: str = "google/vit-base-patch16-224-in21k"
+    vision_alignment_model: str = "google/siglip-base-patch16-224"
     device: str = "cpu"
     prefetch_limit: int = Field(default=50, ge=5)
     final_limit: int = Field(default=10, ge=1)
+    log_level: str = "INFO"
+
+
+def validate_startup(settings: "Settings") -> list[str]:
+    """Verify runtime dependencies are available. Returns list of errors (empty = OK)."""
+    errors: list[str] = []
+
+    # Check Qdrant connectivity
+    try:
+        from commerce_engine.qdrant_store import make_client
+
+        client = make_client(settings.qdrant_url, settings.qdrant_api_key)
+        client.get_collections()
+    except Exception as exc:
+        errors.append(f"Qdrant unreachable at {settings.qdrant_url}: {exc}")
+
+    # Check collection existence (warning, not fatal)
+    try:
+        client = make_client(settings.qdrant_url, settings.qdrant_api_key)
+        if not client.collection_exists(collection_name=settings.qdrant_collection):
+            errors.append(
+                f"Collection '{settings.qdrant_collection}' not found. "
+                f"Run: engine init-qdrant"
+            )
+    except Exception:
+        pass  # Already reported above
+
+    return errors
 
 
 @lru_cache

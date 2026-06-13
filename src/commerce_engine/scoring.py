@@ -45,7 +45,7 @@ def rerank(results: list[SearchResult], profile: UserProfile) -> list[SearchResu
     reranked: list[SearchResult] = []
     for result in results:
         boost, reasons = personalization_boost(result.payload, profile)
-        final_score = result.qdrant_score + boost
+        final_score = result.qdrant_score * (1.0 + boost)
         reranked.append(
             result.model_copy(
                 update={
