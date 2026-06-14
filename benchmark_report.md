@@ -8,7 +8,7 @@
 | Mean Latency | 1.3 ms |
 | P50 Latency | 1.3 ms |
 | P95 Latency | 1.6 ms |
-| P99 Latency | 1.8 ms |
+| P99 Latency | 1.7 ms |
 
 ## Retrieval Quality
 
@@ -24,6 +24,6 @@
 
 | Metric | Value |
 |--------|-------|
-| Points | 0 |
+| Points | 4 |
 | Vectors | 0 |
-| Est. Storage | 0 bytes |
+| Est. Storage | 19,968 bytes |

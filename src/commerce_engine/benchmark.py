@@ -230,28 +230,27 @@ def run_benchmark(
         relevances = [1.0 if rid == bq.expected_product_id else 0.0 for rid in result_ids]
         ndcg_scores.append(_ndcg(relevances, 5))
 
-    # Get real storage from Qdrant
+    storage_bytes = 0
+    points_count = 0
+    vectors_count = 0
     try:
         info = client.get_collection(collection_name=benchmark_collection)
-        storage_bytes = 0
-        points_count = info.points_count or 0
-        vectors_count = info.vectors_count or 0
-        # Estimate from actual vector counts and dimensions
-        if info.config and info.config.params and info.config.params.vectors:
-            for vec_name, vec_params in info.config.params.vectors.items():
-                dim = vec_params.size
-                per_vector_bytes = dim * 4  # float32
-                if profile == "scalar":
-                    per_vector_bytes = dim  # int8
-                elif profile == "binary":
-                    per_vector_bytes = (dim + 7) // 8
-                # vectors_count gives total across all named vectors
-                # Approximate per-named-vector count
-                storage_bytes += points_count * dim * (per_vector_bytes // dim)
+        points_count = getattr(info, "points_count", 0) or 0
+        vectors_count = getattr(info, "vectors_count", 0) or getattr(info, "indexed_vectors_count", 0) or 0
+        try:
+            if info.config and info.config.params and info.config.params.vectors:
+                for vec_name, vec_params in info.config.params.vectors.items():
+                    dim = vec_params.size
+                    per_vector_bytes = dim * 4  # float32
+                    if profile == "scalar":
+                        per_vector_bytes = dim  # int8
+                    elif profile == "binary":
+                        per_vector_bytes = (dim + 7) // 8
+                    storage_bytes += points_count * per_vector_bytes
+        except Exception:
+            storage_bytes = 0
     except Exception:
-        storage_bytes = 0
-        points_count = 0
-        vectors_count = 0
+        pass
 
     n = len(queries)
     result = BenchmarkResult(

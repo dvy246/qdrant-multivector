@@ -174,10 +174,11 @@ def health() -> HealthResponse:
     description="Verifies Qdrant connectivity and collection availability.",
     responses={503: {"model": ErrorResponse}},
 )
-def ready(client: QdrantClient = Depends(get_client)):
+def ready(response: Response, client: QdrantClient = Depends(get_client)):
     settings = get_settings()
     errors = validate_startup(settings, client)
     if errors:
+        response.status_code = 503
         return ReadyResponse(
             status="not_ready",
             qdrant=settings.qdrant_url,

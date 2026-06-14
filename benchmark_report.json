@@ -1,16 +1,16 @@
 {
   "profile": "baseline",
   "query_count": 104,
-  "mean_latency_ms": 1.2951477788542083,
-  "p50_latency_ms": 1.2593749997904524,
-  "p95_latency_ms": 1.5844169993215473,
-  "p99_latency_ms": 1.8311249987164047,
+  "mean_latency_ms": 1.3000208557689172,
+  "p50_latency_ms": 1.2602080000760907,
+  "p95_latency_ms": 1.605749999953332,
+  "p99_latency_ms": 1.7146669999874575,
   "recall_at_1": 0.4230769230769231,
   "recall_at_3": 0.6346153846153846,
   "recall_at_5": 1.0,
   "mrr": 0.6169871794871795,
   "ndcg": 0.7113875411367123,
-  "storage_size_bytes": 0,
-  "points_count": 0,
+  "storage_size_bytes": 19968,
+  "points_count": 4,
   "vectors_count": 0
 }
