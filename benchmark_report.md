@@ -7,8 +7,8 @@
 | Queries | 104 |
 | Mean Latency | 2.2 ms |
 | P50 Latency | 2.2 ms |
-| P95 Latency | 2.6 ms |
-| P99 Latency | 2.8 ms |
+| P95 Latency | 2.5 ms |
+| P99 Latency | 2.7 ms |
 
 ## Retrieval Quality
 

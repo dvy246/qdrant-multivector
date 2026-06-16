@@ -1,0 +1,12 @@
+.git
+.venv
+.hf_cache
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+benchmark_report.json
+benchmark_report.md
