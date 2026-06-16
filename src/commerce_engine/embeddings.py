@@ -125,7 +125,8 @@ class ProductionEmbedder:
 
         Returns a matrix of shape [196, 768] containing the independently
         normalized patch-level token embeddings from SigLIP's vision transformer
-        backbone, skipping the CLS token.
+        backbone. SigLIP (google/siglip-base-patch16-224) outputs 196 patch
+        tokens with no CLS token.
         """
         self._load_siglip()
         import torch
@@ -134,24 +135,21 @@ class ProductionEmbedder:
         siglip_inputs = self._siglip_processor(images=image, return_tensors="pt")
         siglip_inputs = {k: v.to(self.device) for k, v in siglip_inputs.items()}
         with torch.no_grad():
-            # Get raw transformer outputs from the vision model
             vision_outputs = self._siglip_model.vision_model(**siglip_inputs)
-            # Shape: [1, 197, 768]
+            # Shape: [1, 196, 768] — all patch tokens, no CLS in SigLIP
             hidden_states = vision_outputs.last_hidden_state
-            # Normalize along the last dimension (embedding dimension)
+            # Normalize along the embedding dimension
             normalized = torch.nn.functional.normalize(hidden_states, dim=-1)
-            # Skip CLS token at index 0: [1, 196, 768]
-            patch_tokens = normalized[:, 1:, :]
             # Squeeze batch dimension: [196, 768]
-            patches = patch_tokens.squeeze(0)
+            patches = normalized.squeeze(0)
         return patches.cpu().numpy().astype(float).tolist()
 
     def visual_query(self, query: str) -> list[list[float]]:
         """Encode visual query text using SigLIP text tower.
 
         Returns a 1-row matrix with the SigLIP text CLS embedding, which lives
-        in the same contrastive space as the SigLIP vision CLS prepended to
-        document visual vectors. MAX_SIM naturally aligns these.
+        in the same contrastive space as the SigLIP vision patches produced by
+        image_patches(). MAX_SIM naturally aligns these.
         """
         self._load_siglip()
         import torch
@@ -161,8 +159,10 @@ class ProductionEmbedder:
         )
         text_inputs = {k: v.to(self.device) for k, v in text_inputs.items()}
         with torch.no_grad():
-            text_features = self._siglip_model.get_text_features(**text_inputs)
-        text_cls = torch.nn.functional.normalize(text_features, dim=1).squeeze(0)
+            text_outputs = self._siglip_model.text_model(**text_inputs)
+            # Extract CLS token from last hidden state: [1, seq_len, 768] -> [1, 768]
+            text_cls = text_outputs.last_hidden_state[:, 0, :]
+        text_cls = torch.nn.functional.normalize(text_cls, dim=1).squeeze(0)
         return [text_cls.cpu().numpy().astype(float).tolist()]
 
 
