@@ -36,7 +36,7 @@ class DeterministicEmbedder:
     """Small deterministic embedder for unit tests and offline smoke runs.
 
     Produces the same shapes as ProductionEmbedder:
-    - image_patches() returns 1 vector per image (matching SigLIP CLS)
+    - image_patches() returns 196 patch-level vectors (matching SigLIP patch token grid)
     - visual_query() returns 1 vector per query (matching SigLIP text tower)
     """
 
@@ -51,12 +51,13 @@ class DeterministicEmbedder:
         return [_unit_vector(f"review:{finding.lower()}", REVIEW_DIM) for finding in findings]
 
     def image_patches(self, image_path: Path) -> list[list[float]]:
-        """Return 1 vector per image, matching production SigLIP CLS behavior."""
+        """Return 196 patch-level vectors matching production SigLIP patch token count."""
+        NUM_PATCHES = 196  # (224/16)^2 for patch16-224
         image = Image.open(image_path).convert("RGB").resize((224, 224))
         arr = np.asarray(image, dtype=np.float32)
         mean = arr.mean(axis=(0, 1))
-        seed = f"siglip-cls:{image_path.name}:{mean[0]:.1f}:{mean[1]:.1f}:{mean[2]:.1f}"
-        return [_unit_vector(seed, VISION_DIM)]
+        base_seed = f"siglip-patch:{image_path.name}:{mean[0]:.1f}:{mean[1]:.1f}:{mean[2]:.1f}"
+        return [_unit_vector(f"{base_seed}:{i}", VISION_DIM) for i in range(NUM_PATCHES)]
 
     def visual_query(self, query: str) -> list[list[float]]:
         """Return 1 vector per query, matching production SigLIP text tower."""
@@ -120,15 +121,11 @@ class ProductionEmbedder:
         return [embedding.astype(float).tolist() for embedding in self.review_model.embed(findings)]
 
     def image_patches(self, image_path: Path) -> list[list[float]]:
-        """Generate SigLIP vision CLS embedding for cross-modal alignment.
+        """Generate SigLIP patch-level embeddings for local token matching.
 
-        Returns a single-row matrix [1×768] containing the SigLIP global
-        vision embedding, which lives in the same contrastive space as
-        SigLIP text embeddings produced by visual_query().
-
-        Multiple images per product accumulate as additional rows via
-        append_image(), giving MAX_SIM multiple image representations
-        to match against — all in the same embedding space.
+        Returns a matrix of shape [196, 768] containing the independently
+        normalized patch-level token embeddings from SigLIP's vision transformer
+        backbone, skipping the CLS token.
         """
         self._load_siglip()
         import torch
@@ -137,9 +134,17 @@ class ProductionEmbedder:
         siglip_inputs = self._siglip_processor(images=image, return_tensors="pt")
         siglip_inputs = {k: v.to(self.device) for k, v in siglip_inputs.items()}
         with torch.no_grad():
-            siglip_vision = self._siglip_model.get_image_features(**siglip_inputs)
-        siglip_cls = torch.nn.functional.normalize(siglip_vision, dim=1).squeeze(0)
-        return [siglip_cls.cpu().numpy().astype(float).tolist()]
+            # Get raw transformer outputs from the vision model
+            vision_outputs = self._siglip_model.vision_model(**siglip_inputs)
+            # Shape: [1, 197, 768]
+            hidden_states = vision_outputs.last_hidden_state
+            # Normalize along the last dimension (embedding dimension)
+            normalized = torch.nn.functional.normalize(hidden_states, dim=-1)
+            # Skip CLS token at index 0: [1, 196, 768]
+            patch_tokens = normalized[:, 1:, :]
+            # Squeeze batch dimension: [196, 768]
+            patches = patch_tokens.squeeze(0)
+        return patches.cpu().numpy().astype(float).tolist()
 
     def visual_query(self, query: str) -> list[list[float]]:
         """Encode visual query text using SigLIP text tower.
