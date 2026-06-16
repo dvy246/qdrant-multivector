@@ -112,21 +112,37 @@ def search_products(
             query_filter=query_filter,
             limit=max(request.limit * 3, 10),
             with_payload=True,
+            with_vectors=True,
         )
 
     raw_results: list[SearchResult] = []
+    from commerce_engine.scoring import maxsim_score
     for point in response.points:
         payload = dict(point.payload or {})
+        vectors = point.vector or {}
+        doc_visual = vectors.get(VISUAL_VECTOR, [])
+        doc_text = vectors.get(TEXT_VECTOR, [])
+        doc_review = vectors.get(REVIEW_VECTOR, [])
+
+        v_score = maxsim_score(visual_query, doc_visual) if doc_visual else 0.0
+        t_score = maxsim_score(text_query, doc_text) if doc_text else 0.0
+        r_score = maxsim_score(review_query, doc_review) if doc_review else 0.0
+
+        combined_qdrant_score = v_score + t_score + r_score
+        aspect_explanation = [
+            f"aspect scores: visual={v_score:.4f}, text={t_score:.4f}, review={r_score:.4f}"
+        ]
+
         raw_results.append(
             SearchResult(
                 product_id=str(payload.get("product_id", point.id)),
                 title=str(payload.get("title", point.id)),
                 brand=str(payload.get("brand", "")),
                 category=str(payload.get("category", "")),
-                qdrant_score=float(point.score),
-                final_score=float(point.score),
+                qdrant_score=combined_qdrant_score,
+                final_score=combined_qdrant_score,
                 personalization_boost=0.0,
-                explanation=_build_explanation(plan, payload),
+                explanation=[*aspect_explanation, *_build_explanation(plan, payload)],
                 payload=payload,
             )
         )

@@ -51,13 +51,12 @@ class DeterministicEmbedder:
         return [_unit_vector(f"review:{finding.lower()}", REVIEW_DIM) for finding in findings]
 
     def image_patches(self, image_path: Path) -> list[list[float]]:
-        """Return 196 patch-level vectors matching production SigLIP patch token count."""
-        NUM_PATCHES = 196  # (224/16)^2 for patch16-224
+        """Return 1 vector matching production SigLIP pooled image embedding."""
         image = Image.open(image_path).convert("RGB").resize((224, 224))
         arr = np.asarray(image, dtype=np.float32)
         mean = arr.mean(axis=(0, 1))
         base_seed = f"siglip-patch:{image_path.name}:{mean[0]:.1f}:{mean[1]:.1f}:{mean[2]:.1f}"
-        return [_unit_vector(f"{base_seed}:{i}", VISION_DIM) for i in range(NUM_PATCHES)]
+        return [_unit_vector(f"{base_seed}:0", VISION_DIM)]
 
     def visual_query(self, query: str) -> list[list[float]]:
         """Return 1 vector per query, matching production SigLIP text tower."""
@@ -121,12 +120,10 @@ class ProductionEmbedder:
         return [embedding.astype(float).tolist() for embedding in self.review_model.embed(findings)]
 
     def image_patches(self, image_path: Path) -> list[list[float]]:
-        """Generate SigLIP patch-level embeddings for local token matching.
+        """Generate SigLIP aligned pooled image embedding.
 
-        Returns a matrix of shape [196, 768] containing the independently
-        normalized patch-level token embeddings from SigLIP's vision transformer
-        backbone. SigLIP (google/siglip-base-patch16-224) outputs 196 patch
-        tokens with no CLS token.
+        Returns a matrix of shape [1, 768] containing the normalized pooled
+        image representation from SigLIP's multihead attention pooling head.
         """
         self._load_siglip()
         import torch
@@ -136,20 +133,17 @@ class ProductionEmbedder:
         siglip_inputs = {k: v.to(self.device) for k, v in siglip_inputs.items()}
         with torch.no_grad():
             vision_outputs = self._siglip_model.vision_model(**siglip_inputs)
-            # Shape: [1, 196, 768] — all patch tokens, no CLS in SigLIP
-            hidden_states = vision_outputs.last_hidden_state
+            # Shape: [1, 768] - pooled attention features
+            pooled = vision_outputs.pooler_output
             # Normalize along the embedding dimension
-            normalized = torch.nn.functional.normalize(hidden_states, dim=-1)
-            # Squeeze batch dimension: [196, 768]
-            patches = normalized.squeeze(0)
-        return patches.cpu().numpy().astype(float).tolist()
+            normalized = torch.nn.functional.normalize(pooled, dim=-1)
+        return normalized.cpu().numpy().astype(float).tolist()
 
     def visual_query(self, query: str) -> list[list[float]]:
-        """Encode visual query text using SigLIP text tower.
+        """Encode visual query text using SigLIP text tower with projection head.
 
-        Returns a 1-row matrix with the SigLIP text CLS embedding, which lives
-        in the same contrastive space as the SigLIP vision patches produced by
-        image_patches(). MAX_SIM naturally aligns these.
+        Returns a 1-row matrix of shape [1, 768] containing the normalized
+        projected text representation from SigLIP's linear projection head.
         """
         self._load_siglip()
         import torch
@@ -160,10 +154,10 @@ class ProductionEmbedder:
         text_inputs = {k: v.to(self.device) for k, v in text_inputs.items()}
         with torch.no_grad():
             text_outputs = self._siglip_model.text_model(**text_inputs)
-            # Extract CLS token from last hidden state: [1, seq_len, 768] -> [1, 768]
-            text_cls = text_outputs.last_hidden_state[:, 0, :]
-        text_cls = torch.nn.functional.normalize(text_cls, dim=1).squeeze(0)
-        return [text_cls.cpu().numpy().astype(float).tolist()]
+            # Shape: [1, 768] - EOS token projected features
+            pooled = text_outputs.pooler_output
+            normalized = torch.nn.functional.normalize(pooled, dim=-1)
+        return normalized.cpu().numpy().astype(float).tolist()
 
 
 def create_embedder(
