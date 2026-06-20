@@ -284,15 +284,16 @@ def result_dict(result: BenchmarkResult) -> dict:
 
 def write_benchmark_report(result: BenchmarkResult, output_dir: Path) -> None:
     """Write benchmark_report.json and benchmark_report.md to output_dir."""
-    output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-    # JSON report
-    json_path = output_dir / "benchmark_report.json"
-    json_path.write_text(json.dumps(asdict(result), indent=2))
+        # JSON report
+        json_path = output_dir / "benchmark_report.json"
+        json_path.write_text(json.dumps(asdict(result), indent=2))
 
-    # Markdown report
-    md_path = output_dir / "benchmark_report.md"
-    md_content = f"""# Benchmark Report — Profile: {result.profile}
+        # Markdown report
+        md_path = output_dir / "benchmark_report.md"
+        md_content = f"""# Benchmark Report — Profile: {result.profile}
 
 ## Summary
 
@@ -322,5 +323,8 @@ def write_benchmark_report(result: BenchmarkResult, output_dir: Path) -> None:
 | Vectors | {result.vectors_count} |
 | Est. Storage | {result.storage_size_bytes:,} bytes |
 """
-    md_path.write_text(md_content)
-    logger.info(f"benchmark report written to {output_dir}")
+        md_path.write_text(md_content)
+        logger.info(f"benchmark report written to {output_dir}")
+    except PermissionError as exc:
+        logger.warning(f"Failed to write benchmark reports due to permissions (this is expected on restricted filesystems): {exc}")
+

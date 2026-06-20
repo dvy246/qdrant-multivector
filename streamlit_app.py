@@ -20,8 +20,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 import streamlit as st
 
 from commerce_engine.benchmark import result_dict, run_benchmark
+from commerce_engine.dataset import DEMO_USERS, load_real_products
 from commerce_engine.embeddings import create_embedder
-from commerce_engine.fixtures import FIXTURE_PRODUCTS, FIXTURE_USERS, ensure_fixture_images
+from commerce_engine.fixtures import FIXTURE_USERS
 from commerce_engine.ingest import ingest_products
 from commerce_engine.models import SearchFilters, SearchRequest
 from commerce_engine.qdrant_store import make_client, recreate_collection
@@ -29,10 +30,14 @@ from commerce_engine.query import decompose_query
 from commerce_engine.search import search_products
 from commerce_engine.updates import append_image, append_review
 
+# Register demo users into the shared user registry so that search.py's
+# _profile() function can resolve them without modifying search.py.
+FIXTURE_USERS.update(DEMO_USERS)
+
 
 st.set_page_config(
     page_title="Multi-Aspect Commerce Engine",
-    page_icon="⚡",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -134,9 +139,36 @@ footer {visibility: hidden;}
     unsafe_allow_html=True,
 )
 
+# ---------------------------------------------------------------------------
+# Cached resources
+# ---------------------------------------------------------------------------
+
 @st.cache_resource
 def _make_client(url: str):
-    return make_client(url)
+    from qdrant_client import QdrantClient
+    try:
+        c = make_client(url)
+        c.get_collections()
+        c.is_memory_fallback = False
+        return c
+    except Exception:
+        c = QdrantClient(location=":memory:")
+        c.is_memory_fallback = True
+        # Initialize collection and pre-populate with real products
+        from commerce_engine.qdrant_store import recreate_collection
+        from commerce_engine.ingest import ingest_products
+        from commerce_engine.embeddings import create_embedder
+        
+        recreate_collection(c, "commerce_products")
+        products = load_real_products(Path.cwd())
+        embedder = create_embedder(
+            "deterministic",
+            text_model="answerdotai/answerai-colbert-small-v1",
+            review_model="BAAI/bge-small-en-v1.5",
+        )
+        ingest_products(c, "commerce_products", products, embedder)
+        return c
+
 
 
 @st.cache_resource
@@ -147,6 +179,15 @@ def _make_embedder(backend: str):
         review_model="BAAI/bge-small-en-v1.5",
     )
 
+
+@st.cache_resource
+def _load_products():
+    return load_real_products(Path.cwd())
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def _qdrant_ok(client) -> bool:
     try:
@@ -179,8 +220,15 @@ def _score_bar(label: str, value: float, cap: float, css: str) -> str:
         f"</div>"
     )
 
+# ---------------------------------------------------------------------------
+# Pages
+# ---------------------------------------------------------------------------
+
+
 def page_search(client, col, embedder):
-    st.markdown('<div class="hero-title">🔍 Multi-Aspect Search</div>', unsafe_allow_html=True)
+    products = _load_products()
+
+    st.markdown('<div class="hero-title">Multi-Aspect Search</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="hero-sub">Search across visual, specification, and review aspects simultaneously</div>',
         unsafe_allow_html=True,
@@ -191,30 +239,30 @@ def page_search(client, col, embedder):
     with c_q:
         query = st.text_input(
             "query",
-            value="Waterproof black hiking boots with good arch support",
-            placeholder="Describe what you're looking for…",
+            value="Soft breathable linen pants with relaxed fit",
+            placeholder="Describe what you're looking for...",
             label_visibility="collapsed",
         )
     with c_u:
-        user_id = st.selectbox("user", list(FIXTURE_USERS), label_visibility="collapsed")
+        user_id = st.selectbox("user", list(DEMO_USERS), label_visibility="collapsed")
 
     # --- decomposition preview ---
     if query:
         plan = decompose_query(query)
-        st.markdown('<div class="sec-hdr">📡 Query Route Decomposition</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sec-hdr">Query Route Decomposition</div>', unsafe_allow_html=True)
         rc1, rc2, rc3 = st.columns(3)
         with rc1:
             t = ", ".join(plan.text_terms) or plan.original_query
-            st.markdown(f'<span class="route-badge route-text">📝 Specs → {t}</span>', unsafe_allow_html=True)
+            st.markdown(f'<span class="route-badge route-text">Specs: {t}</span>', unsafe_allow_html=True)
         with rc2:
             v = ", ".join(plan.visual_terms) or plan.original_query
-            st.markdown(f'<span class="route-badge route-visual">👁️ Visual → {v}</span>', unsafe_allow_html=True)
+            st.markdown(f'<span class="route-badge route-visual">Visual: {v}</span>', unsafe_allow_html=True)
         with rc3:
             r = ", ".join(plan.review_terms) or plan.original_query
-            st.markdown(f'<span class="route-badge route-review">💬 Reviews → {r}</span>', unsafe_allow_html=True)
+            st.markdown(f'<span class="route-badge route-review">Reviews: {r}</span>', unsafe_allow_html=True)
 
     # --- filters ---
-    with st.expander("🔧 Filters", expanded=False):
+    with st.expander("Filters", expanded=False):
         f1, f2, f3, f4 = st.columns(4)
         with f1:
             min_price = st.number_input("Min price ($)", 0.0, step=10.0, value=0.0)
@@ -223,22 +271,22 @@ def page_search(client, col, embedder):
             avail_map = {"Available only": True, "All products": None, "Unavailable only": False}
             avail_label = st.selectbox("Availability", list(avail_map))
         with f3:
-            brands = st.multiselect("Brands", sorted({p.brand for p in FIXTURE_PRODUCTS}))
-            categories = st.multiselect("Categories", sorted({p.category for p in FIXTURE_PRODUCTS}))
+            brands = st.multiselect("Brands", sorted({p.brand for p in products}))
+            categories = st.multiselect("Categories", sorted({p.category for p in products}))
         with f4:
-            colors = st.multiselect("Colors", sorted({p.color for p in FIXTURE_PRODUCTS}))
-            regions = st.multiselect("Regions", sorted({p.region for p in FIXTURE_PRODUCTS}))
+            colors = st.multiselect("Colors", sorted({p.color for p in products}))
+            regions = st.multiselect("Regions", sorted({p.region for p in products}))
 
     limit = st.slider("Max results", 1, 20, 10)
 
     # --- search button ---
-    if st.button("🔍  Search", type="primary", use_container_width=True):
+    if st.button("Search", type="primary", use_container_width=True):
         if not query.strip():
             st.warning("Enter a search query.")
             return
 
         if not _collection_ok(client, col):
-            st.error("Collection not found. Go to **Catalog** → Initialize & Ingest first.")
+            st.error("Collection not found. Go to **Catalog** and initialize first.")
             return
 
         filters = SearchFilters(
@@ -252,7 +300,7 @@ def page_search(client, col, embedder):
         )
         req = SearchRequest(query=query, user_id=user_id, filters=filters, limit=limit)
 
-        with st.spinner("Searching across all aspects…"):
+        with st.spinner("Searching across all aspects..."):
             try:
                 t0 = time.perf_counter()
                 results = search_products(client, col, req, embedder)
@@ -262,16 +310,16 @@ def page_search(client, col, embedder):
                 return
 
         # --- user context ---
-        prof = FIXTURE_USERS.get(user_id)
+        prof = DEMO_USERS.get(user_id)
         if prof:
             st.caption(
-                f"👤 **{user_id}** — Brands: {', '.join(prof.preferred_brands)} · "
-                f"Price: ${prof.price_range[0]:g}–${prof.price_range[1]:g} · "
-                f"Eco: {'✅' if prof.eco_preference else '—'}"
+                f"**{user_id}** — Brands: {', '.join(prof.preferred_brands)} | "
+                f"Price: ${prof.price_range[0]:g}-${prof.price_range[1]:g} | "
+                f"Eco: {'Yes' if prof.eco_preference else 'No'}"
             )
 
         st.markdown(
-            f'<div class="sec-hdr">📦 {len(results)} result{"s" if len(results) != 1 else ""} '
+            f'<div class="sec-hdr">{len(results)} result{"s" if len(results) != 1 else ""} '
             f"in {elapsed_ms:.0f} ms</div>",
             unsafe_allow_html=True,
         )
@@ -301,17 +349,17 @@ def page_search(client, col, embedder):
                         f'<span class="tag tag-cat">{res.category}</span>'
                     )
                     if pay.get("availability"):
-                        tags += '<span class="tag tag-ok">● In Stock</span>'
+                        tags += '<span class="tag tag-ok">In Stock</span>'
                     else:
-                        tags += '<span class="tag tag-out">● Out of Stock</span>'
+                        tags += '<span class="tag tag-out">Out of Stock</span>'
                     if pay.get("is_sustainable"):
-                        tags += '<span class="tag tag-eco">🌱 Eco</span>'
+                        tags += '<span class="tag tag-eco">Eco</span>'
                     st.markdown(tags, unsafe_allow_html=True)
                     st.markdown(f'<span class="price">${pay.get("price", 0):.2f}</span>', unsafe_allow_html=True)
 
                     specs = pay.get("specs", {})
                     if specs:
-                        st.caption(" · ".join(f"**{k}**: {v}" for k, v in specs.items()))
+                        st.caption(" | ".join(f"**{k}**: {v}" for k, v in specs.items()))
 
                 # scores
                 with cs:
@@ -323,13 +371,15 @@ def page_search(client, col, embedder):
 
                     with st.expander("Explanation"):
                         for line in res.explanation:
-                            icon = "⚡" if any(k in line for k in ("preferred", "price in", "eco", "favorite")) else "→"
-                            st.markdown(f"{icon} {line}")
+                            marker = "*" if any(k in line for k in ("preferred", "price in", "eco", "favorite")) else "-"
+                            st.markdown(f"{marker} {line}")
 
 def page_catalog(client, col, embedder):
-    st.markdown('<div class="hero-title">📦 Product Catalog</div>', unsafe_allow_html=True)
+    products = _load_products()
+
+    st.markdown('<div class="hero-title">Product Catalog</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="hero-sub">View fixture products, initialize collection, and ingest data</div>',
+        '<div class="hero-sub">Browse the product dataset, initialize collection, and ingest data</div>',
         unsafe_allow_html=True,
     )
 
@@ -337,8 +387,8 @@ def page_catalog(client, col, embedder):
     a1, a2, a3 = st.columns(3)
     with a1:
         profile = st.selectbox("Quantization profile", ["baseline", "scalar", "binary"])
-        if st.button("🏗️  Initialize Collection", use_container_width=True):
-            with st.spinner("Creating collection…"):
+        if st.button("Initialize Collection", use_container_width=True):
+            with st.spinner("Creating collection..."):
                 try:
                     recreate_collection(client, col, profile=profile)
                     st.success(f"Collection **{col}** created with **{profile}** profile.")
@@ -347,10 +397,9 @@ def page_catalog(client, col, embedder):
     with a2:
         st.markdown("&nbsp;", unsafe_allow_html=True)
         st.markdown("&nbsp;", unsafe_allow_html=True)
-        if st.button("📥  Ingest Fixture Products", use_container_width=True):
-            with st.spinner("Embedding & ingesting…"):
+        if st.button("Ingest Products", use_container_width=True):
+            with st.spinner("Embedding and ingesting..."):
                 try:
-                    products = ensure_fixture_images(Path.cwd())
                     ingest_products(client, col, products, embedder)
                     st.success(f"Ingested **{len(products)}** products.")
                 except Exception as e:
@@ -358,7 +407,7 @@ def page_catalog(client, col, embedder):
     with a3:
         st.markdown("&nbsp;", unsafe_allow_html=True)
         st.markdown("&nbsp;", unsafe_allow_html=True)
-        if st.button("🔄  Refresh", use_container_width=True):
+        if st.button("Refresh", use_container_width=True):
             st.rerun()
 
     # --- collection status ---
@@ -369,9 +418,8 @@ def page_catalog(client, col, embedder):
         st.warning(f"Collection **{col}** not found. Click **Initialize Collection** above.")
 
     # --- product cards ---
-    st.markdown('<div class="sec-hdr">🏷️ Fixture Products</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-hdr">Products</div>', unsafe_allow_html=True)
 
-    products = ensure_fixture_images(Path.cwd())
     cols = st.columns(2)
     for idx, p in enumerate(products):
         with cols[idx % 2]:
@@ -382,45 +430,47 @@ def page_catalog(client, col, embedder):
                         st.image(str(p.image_path), width=120)
                 with tc:
                     st.markdown(f"**{p.title}**")
-                    st.caption(f"{p.brand} · {p.category} · {p.color} · {p.region}")
-                    avail = "🟢 Available" if p.availability else "🔴 Unavailable"
-                    eco = f" · 🌱 Eco {p.eco_score:.0%}" if p.is_sustainable else ""
+                    st.caption(f"{p.brand} | {p.category} | {p.color} | {p.region}")
+                    avail = "Available" if p.availability else "Unavailable"
+                    eco = f" | Eco {p.eco_score:.0%}" if p.is_sustainable else ""
                     st.markdown(f"**${p.price:.2f}** {avail}{eco}")
 
-                    with st.expander("Specs & Reviews"):
+                    with st.expander("Specs and Reviews"):
                         for k, v in p.specs.items():
-                            st.markdown(f"• **{k}**: {v}")
+                            st.markdown(f"- **{k}**: {v}")
                         st.divider()
                         for rev in p.reviews:
-                            st.markdown(f'💬 *"{rev}"*')
+                            st.markdown(f'*"{rev}"*')
 
 def page_updates(client, col, embedder):
-    st.markdown('<div class="hero-title">🔄 Incremental Updates</div>', unsafe_allow_html=True)
+    products = _load_products()
+
+    st.markdown('<div class="hero-title">Incremental Updates</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="hero-sub">Append reviews and images without rebuilding the collection</div>',
         unsafe_allow_html=True,
     )
 
     if not _collection_ok(client, col):
-        st.warning("Collection not found. Go to **Catalog** → Initialize & Ingest first.")
+        st.warning("Collection not found. Go to **Catalog** and initialize first.")
         return
 
-    tab_rev, tab_img = st.tabs(["💬 Add Review", "🖼️ Add Image"])
+    tab_rev, tab_img = st.tabs(["Add Review", "Add Image"])
 
     # --- review tab ---
     with tab_rev:
         st.markdown('<div class="sec-hdr">Append a Customer Review</div>', unsafe_allow_html=True)
-        pid_r = st.selectbox("Product", [p.id for p in FIXTURE_PRODUCTS], key="rev_pid")
+        pid_r = st.selectbox("Product", [p.id for p in products], key="rev_pid")
         review_text = st.text_area(
             "Review text",
-            placeholder="e.g., Amazing ankle support on rocky terrain.",
+            placeholder="e.g., Amazing fabric quality, feels luxurious on the skin.",
             key="rev_txt",
         )
-        if st.button("📝  Submit Review", type="primary", key="rev_btn"):
+        if st.button("Submit Review", type="primary", key="rev_btn"):
             if not review_text.strip():
                 st.warning("Enter review text.")
             else:
-                with st.spinner("Extracting findings → embedding → updating Qdrant…"):
+                with st.spinner("Extracting findings, embedding, updating Qdrant..."):
                     try:
                         out = append_review(client, col, pid_r, review_text, embedder)
                         st.success("Review appended!")
@@ -431,21 +481,21 @@ def page_updates(client, col, embedder):
     # --- image tab ---
     with tab_img:
         st.markdown('<div class="sec-hdr">Append a Product Image</div>', unsafe_allow_html=True)
-        pid_i = st.selectbox("Product", [p.id for p in FIXTURE_PRODUCTS], key="img_pid")
+        pid_i = st.selectbox("Product", [p.id for p in products], key="img_pid")
 
         img_dir = Path.cwd() / "data" / "images"
         images = sorted(img_dir.glob("*.png")) if img_dir.exists() else []
 
         if not images:
-            st.info("No images found. Run **Catalog → Ingest** first to generate fixture images.")
+            st.info("No images found. Run **Catalog > Ingest** first to generate product images.")
             return
 
         chosen = st.selectbox("Image file", images, format_func=lambda p: p.name, key="img_sel")
         if chosen:
             st.image(str(chosen), width=200, caption=chosen.name)
 
-        if st.button("🖼️  Append Image", type="primary", key="img_btn"):
-            with st.spinner("Generating patch embeddings → updating Qdrant…"):
+        if st.button("Append Image", type="primary", key="img_btn"):
+            with st.spinner("Generating patch embeddings, updating Qdrant..."):
                 try:
                     out = append_image(client, col, pid_i, chosen, embedder)
                     st.success("Image patches appended!")
@@ -455,7 +505,7 @@ def page_updates(client, col, embedder):
 
 
 def page_benchmarks(client, col, embedder):
-    st.markdown('<div class="hero-title">📊 Performance Benchmarks</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-title">Performance Benchmarks</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="hero-sub">Compare quantization profiles: latency, recall, and estimated storage</div>',
         unsafe_allow_html=True,
@@ -467,16 +517,16 @@ def page_benchmarks(client, col, embedder):
         default=["baseline", "scalar", "binary"],
     )
 
-    if st.button("🚀  Run Benchmarks", type="primary", use_container_width=True):
+    if st.button("Run Benchmarks", type="primary", use_container_width=True):
         if not profiles:
             st.warning("Select at least one profile.")
             return
 
         all_results: list[dict] = []
-        bar = st.progress(0, text="Starting…")
+        bar = st.progress(0, text="Starting...")
 
         for i, prof in enumerate(profiles):
-            bar.progress(i / len(profiles), text=f"Benchmarking **{prof}**…")
+            bar.progress(i / len(profiles), text=f"Benchmarking **{prof}**...")
             try:
                 res = run_benchmark(client, col, Path.cwd(), embedder, prof)
                 all_results.append(result_dict(res))
@@ -489,7 +539,7 @@ def page_benchmarks(client, col, embedder):
             return
 
         # --- metric cards ---
-        st.markdown('<div class="sec-hdr">📈 Results</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sec-hdr">Results</div>', unsafe_allow_html=True)
 
         for r in all_results:
             with st.container(border=True):
@@ -501,7 +551,7 @@ def page_benchmarks(client, col, embedder):
                 m5.metric("Est. Storage", f'{r["storage_size_bytes"] / 1024:.1f} KB')
 
         # --- comparison table ---
-        st.markdown('<div class="sec-hdr">📋 Detailed Comparison</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sec-hdr">Detailed Comparison</div>', unsafe_allow_html=True)
         st.dataframe(all_results, use_container_width=True, hide_index=True)
 
         # --- charts (only with 2+ profiles) ---
@@ -522,10 +572,10 @@ def main():
     # ---- sidebar ----
     with st.sidebar:
         st.markdown(
-            '<div class="hero-title" style="font-size:1.35rem">⚡ Commerce Engine</div>',
+            '<div class="hero-title" style="font-size:1.35rem">Commerce Engine</div>',
             unsafe_allow_html=True,
         )
-        st.caption("Multi-Aspect Semantic Search · By Divy Yadav")
+        st.caption("Multi-Aspect Semantic Search | By Divy Yadav")
         st.divider()
 
         qdrant_url = st.text_input("Qdrant URL", value="http://localhost:6333")
@@ -533,13 +583,13 @@ def main():
         backend = st.selectbox("Embedding backend", ["deterministic", "production"])
 
         if backend == "production":
-            st.caption("⚠️ Production mode downloads ML models on first use.")
+            st.caption("Production mode downloads ML models on first use.")
 
         st.divider()
 
         page = st.radio(
             "nav",
-            ["🔍 Search", "📦 Catalog", "🔄 Updates", "📊 Benchmarks"],
+            ["Search", "Catalog", "Updates", "Benchmarks"],
             label_visibility="collapsed",
         )
 
@@ -551,9 +601,15 @@ def main():
         connected = _qdrant_ok(client)
 
         if connected:
-            st.markdown(
-                '<span class="dot dot-on"></span> Qdrant connected', unsafe_allow_html=True
-            )
+            if getattr(client, "is_memory_fallback", False):
+                st.markdown(
+                    '<span class="dot dot-on"></span> Qdrant connected (in-memory)', unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    '<span class="dot dot-on"></span> Qdrant connected', unsafe_allow_html=True
+                )
+
             if _collection_ok(client, collection):
                 n = _point_count(client, collection)
                 st.caption(f"`{collection}` — {n} points")
@@ -567,19 +623,19 @@ def main():
 
     # ---- main area ----
     if not connected:
-        st.markdown('<div class="hero-title">⚡ Multi-Aspect Commerce Engine</div>', unsafe_allow_html=True)
+        st.markdown('<div class="hero-title">Multi-Aspect Commerce Engine</div>', unsafe_allow_html=True)
         st.error("**Cannot connect to Qdrant.** Start the server first:")
         st.code("docker compose up -d qdrant", language="bash")
         st.info("Then refresh this page.")
         return
 
-    if page == "🔍 Search":
+    if page == "Search":
         page_search(client, collection, embedder)
-    elif page == "📦 Catalog":
+    elif page == "Catalog":
         page_catalog(client, collection, embedder)
-    elif page == "🔄 Updates":
+    elif page == "Updates":
         page_updates(client, collection, embedder)
-    elif page == "📊 Benchmarks":
+    elif page == "Benchmarks":
         page_benchmarks(client, collection, embedder)
 
 

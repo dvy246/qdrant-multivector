@@ -128,8 +128,35 @@ The default test suite avoids network/model downloads by using deterministic emb
 ## 15. Deployment
 Set `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_COLLECTION`, and `EMBEDDING_BACKEND=production`. Keep Qdrant storage persistent, monitor latency and recall, and pin model versions before client deployment.
 
-## 16. README
-This README intentionally follows the client-requested 17-section order. References verified during planning:
+## 16. Application Screenshots
+
+### Search Page
+![Search Page](docs/images/search_page.png)
+
+### Search Results
+![Search Results](docs/images/search_results.png)
+
+### Product Catalog
+![Product Catalog](docs/images/product_catalog.png)
+
+### Update Workflow
+![Update Workflow](docs/images/update_workflow.png)
+
+### Benchmark Dashboard
+![Benchmark Dashboard](docs/images/benchmark_dashboard.png)
+
+### FastAPI Swagger Docs
+![FastAPI Swagger Docs](docs/images/fastapi_swagger.png)
+
+## 17. Dataset Used
+
+This project now supports a real-world dataset option alongside the fixture data:
+- **Women's E-Commerce Clothing Reviews** dataset: a curated 20-product subset containing real clothing titles, reviews, ratings, categories, and attributes (stored in `data/real_products.json`).
+- Automatically loaded by default in the Streamlit UI to present a highly realistic product catalog.
+- Original deterministic fixtures (`fixtures.py`) remain available and are used exclusively in the test suite and benchmark runner.
+
+## 18. References & Documentation
+References verified during planning:
 - Qdrant vectors/multivectors: https://qdrant.tech/documentation/manage-data/vectors/
 - Qdrant hybrid queries and prefetch: https://qdrant.tech/documentation/search/hybrid-queries/
 - Qdrant payload indexes: https://qdrant.tech/documentation/manage-data/indexing/
@@ -137,5 +164,6 @@ This README intentionally follows the client-requested 17-section order. Referen
 - FastEmbed ColBERT: https://qdrant.tech/documentation/fastembed/fastembed-colbert/
 - Hugging Face SigLIP: https://huggingface.co/docs/transformers/model_doc/siglip
 
-## 17. Complete Source Code
+## 19. Complete Source Code
 The complete source code is in this repository under `src/commerce_engine` with tests under `tests`. No pseudo-code or placeholder functions are used; model-backed production paths load FastEmbed and Hugging Face models lazily at runtime, while deterministic embeddings exist for repeatable tests and offline smoke validation.
+

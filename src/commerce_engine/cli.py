@@ -41,13 +41,23 @@ def init_qdrant(profile: str = "baseline") -> None:
 
 
 @app.command("ingest")
-def ingest(fixtures: bool = typer.Option(False, "--fixtures")) -> None:
+def ingest(
+    fixtures: bool = typer.Option(False, "--fixtures"),
+    dataset: bool = typer.Option(False, "--dataset"),
+) -> None:
     settings, client, embedder = _deps()
-    if not fixtures:
-        raise typer.BadParameter("only --fixtures ingestion is included in this portfolio build")
-    products = ensure_fixture_images(Path.cwd())
-    ingest_products(client, settings.qdrant_collection, products, embedder)
-    typer.echo(f"ingested {len(products)} products")
+    if dataset:
+        from commerce_engine.dataset import load_real_products
+
+        products = load_real_products(Path.cwd())
+        ingest_products(client, settings.qdrant_collection, products, embedder)
+        typer.echo(f"ingested {len(products)} real products from dataset")
+    elif fixtures:
+        products = ensure_fixture_images(Path.cwd())
+        ingest_products(client, settings.qdrant_collection, products, embedder)
+        typer.echo(f"ingested {len(products)} fixture products")
+    else:
+        raise typer.BadParameter("specify --fixtures or --dataset")
 
 
 @app.command("search")

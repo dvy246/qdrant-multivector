@@ -1,0 +1,484 @@
+[
+  {
+    "id": "dress-001",
+    "title": "Reformation Floral Midi Wrap Dress",
+    "brand": "Reformation",
+    "category": "dresses",
+    "price": 218.0,
+    "availability": true,
+    "region": "US",
+    "color": "burgundy",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.91,
+    "is_sustainable": true,
+    "specs": {
+      "fabric": "100% viscose with floral print",
+      "fit": "wrap silhouette with adjustable tie waist",
+      "length": "midi length, hits below the knee"
+    },
+    "reviews": [
+      "Absolutely gorgeous fabric that drapes beautifully on any body type.",
+      "Runs slightly large, I recommend sizing down for a more fitted look.",
+      "Perfect for summer weddings and outdoor brunches.",
+      "The wrap silhouette is incredibly flattering and comfortable."
+    ]
+  },
+  {
+    "id": "top-002",
+    "title": "Everlane The Japanese GoWeave Tank",
+    "brand": "Everlane",
+    "category": "tops",
+    "price": 58.0,
+    "availability": true,
+    "region": "US",
+    "color": "black",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.85,
+    "is_sustainable": true,
+    "specs": {
+      "fabric": "Japanese GoWeave, 68% triacetate 32% polyester",
+      "fit": "relaxed tank with clean lines",
+      "care": "machine washable, wrinkle-resistant"
+    },
+    "reviews": [
+      "The weave on this tank is so refined, looks much more expensive than it is.",
+      "Great for layering under blazers at work.",
+      "Fabric does not wrinkle even after a full day of wear.",
+      "Fits true to size and the length is perfect for tucking."
+    ]
+  },
+  {
+    "id": "jean-003",
+    "title": "Madewell High-Rise Skinny Jeans",
+    "brand": "Madewell",
+    "category": "jeans",
+    "price": 128.0,
+    "availability": true,
+    "region": "US",
+    "color": "indigo",
+    "sizes": ["24", "25", "26", "27", "28", "29", "30", "31", "32"],
+    "eco_score": 0.48,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "premium denim, 98% cotton 2% elastane",
+      "fit": "high-rise skinny through hip and thigh",
+      "wash": "medium indigo with light fading"
+    },
+    "reviews": [
+      "Best jeans I have ever owned, the stretch is perfect without losing shape.",
+      "High rise stays in place without digging into the waist.",
+      "These hold their shape even after multiple washes.",
+      "Runs a bit snug in the thighs, consider sizing up one."
+    ]
+  },
+  {
+    "id": "jacket-004",
+    "title": "Patagonia Better Sweater Fleece Jacket",
+    "brand": "Patagonia",
+    "category": "jackets",
+    "price": 149.0,
+    "availability": true,
+    "region": "US",
+    "color": "sage",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.93,
+    "is_sustainable": true,
+    "specs": {
+      "fabric": "100% recycled polyester fleece",
+      "insulation": "sweater-knit face with fleece interior",
+      "certification": "Fair Trade Certified sewn"
+    },
+    "reviews": [
+      "Incredibly warm and cozy for cool fall mornings.",
+      "Love the sustainable materials and fair trade certification.",
+      "Fits true to size with room for layering underneath.",
+      "The sage color is even more beautiful in person.",
+      "Pockets are deep and functional, perfect for hiking."
+    ]
+  },
+  {
+    "id": "body-005",
+    "title": "Free People Intimately Seamless Bodysuit",
+    "brand": "Free People",
+    "category": "intimates",
+    "price": 38.0,
+    "availability": true,
+    "region": "US",
+    "color": "cream",
+    "sizes": ["XS", "S", "M", "L"],
+    "eco_score": 0.32,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "92% nylon 8% spandex seamless knit",
+      "fit": "second-skin seamless construction",
+      "closure": "snap closure at gusset"
+    },
+    "reviews": [
+      "So comfortable I forget I am wearing it.",
+      "The seamless construction is perfect under sheer tops.",
+      "Runs small, definitely size up for comfort."
+    ]
+  },
+  {
+    "id": "top-006",
+    "title": "J.Crew Classic-Fit Cotton Poplin Shirt",
+    "brand": "J.Crew",
+    "category": "tops",
+    "price": 79.50,
+    "availability": true,
+    "region": "US",
+    "color": "white",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.41,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "100% cotton poplin",
+      "fit": "classic fit with back dart",
+      "collar": "point collar with stays"
+    },
+    "reviews": [
+      "Crisp and professional, perfect for the office.",
+      "The cotton quality is outstanding, holds up after many washes.",
+      "Slightly boxy fit which I personally love for a relaxed look.",
+      "Great white shirt that does not become see-through."
+    ]
+  },
+  {
+    "id": "pant-007",
+    "title": "Anthropologie Pilcro Relaxed Linen Pants",
+    "brand": "Anthropologie",
+    "category": "pants",
+    "price": 98.0,
+    "availability": true,
+    "region": "US",
+    "color": "olive",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.55,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "100% European linen",
+      "fit": "relaxed through hip and thigh",
+      "waist": "elastic waistband with drawstring"
+    },
+    "reviews": [
+      "The linen is soft from the first wear, no breaking in needed.",
+      "Incredibly breathable for hot summer days.",
+      "The relaxed fit is trendy but still polished enough for work.",
+      "Wrinkles are part of the linen charm but these resist more than most."
+    ]
+  },
+  {
+    "id": "jacket-008",
+    "title": "Zara Oversized Blazer with Pockets",
+    "brand": "Zara",
+    "category": "jackets",
+    "price": 89.90,
+    "availability": true,
+    "region": "EU",
+    "color": "charcoal",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.38,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "78% polyester 22% viscose",
+      "fit": "oversized relaxed cut",
+      "features": "two flap pockets, padded shoulders"
+    },
+    "reviews": [
+      "Instantly elevates any outfit from casual to polished.",
+      "The oversized cut is on trend and very comfortable.",
+      "Pocket placement is functional and flattering.",
+      "Lining quality is average but acceptable at this price point."
+    ]
+  },
+  {
+    "id": "active-009",
+    "title": "Lululemon Align High-Rise Pant",
+    "brand": "Lululemon",
+    "category": "activewear",
+    "price": 98.0,
+    "availability": true,
+    "region": "US",
+    "color": "black",
+    "sizes": ["2", "4", "6", "8", "10", "12"],
+    "eco_score": 0.44,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "Nulu fabric, four-way stretch",
+      "waist": "high-rise, 28-inch inseam",
+      "features": "hidden waistband pocket"
+    },
+    "reviews": [
+      "Buttery soft fabric that feels like a second skin.",
+      "These are hands down the most comfortable leggings I own.",
+      "High waist stays in place during yoga and running.",
+      "Fabric pills slightly after heavy use but still worth it.",
+      "True to size with excellent compression."
+    ]
+  },
+  {
+    "id": "knit-010",
+    "title": "Everlane The Cashmere Crew",
+    "brand": "Everlane",
+    "category": "knitwear",
+    "price": 120.0,
+    "availability": true,
+    "region": "US",
+    "color": "navy",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.82,
+    "is_sustainable": true,
+    "specs": {
+      "fabric": "Grade-A Mongolian cashmere",
+      "fit": "relaxed crew neck",
+      "care": "hand wash or dry clean recommended"
+    },
+    "reviews": [
+      "Luxuriously soft cashmere at a reasonable price.",
+      "The navy color is rich and does not fade after washing.",
+      "Fits relaxed but not oversized, exactly what I wanted.",
+      "Minor pilling after several wears but easily removed."
+    ]
+  },
+  {
+    "id": "top-011",
+    "title": "Reformation Juliette Sleeveless Top",
+    "brand": "Reformation",
+    "category": "tops",
+    "price": 78.0,
+    "availability": true,
+    "region": "US",
+    "color": "blush",
+    "sizes": ["XS", "S", "M", "L"],
+    "eco_score": 0.88,
+    "is_sustainable": true,
+    "specs": {
+      "fabric": "100% Tencel lyocell",
+      "fit": "slim with square neckline",
+      "sustainability": "carbon neutral production"
+    },
+    "reviews": [
+      "The blush color is subtle and elegant for any occasion.",
+      "Lightweight and perfect for layering in transitional weather.",
+      "Runs true to size with a flattering neckline."
+    ]
+  },
+  {
+    "id": "top-012",
+    "title": "Madewell Central Shirt in Stripe",
+    "brand": "Madewell",
+    "category": "tops",
+    "price": 72.0,
+    "availability": true,
+    "region": "US",
+    "color": "navy stripe",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.46,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "100% cotton",
+      "fit": "relaxed button-down",
+      "pattern": "horizontal navy and white stripe"
+    },
+    "reviews": [
+      "Classic striped pattern that goes with everything.",
+      "Soft cotton fabric that gets softer with every wash.",
+      "The relaxed fit is perfect for weekend casual wear.",
+      "Buttons stay secure and the collar lays nicely."
+    ]
+  },
+  {
+    "id": "pant-013",
+    "title": "H&M Wide-Leg Linen Trousers",
+    "brand": "H&M",
+    "category": "pants",
+    "price": 34.99,
+    "availability": true,
+    "region": "EU",
+    "color": "beige",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.36,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "100% linen",
+      "fit": "wide-leg with high waist",
+      "closure": "concealed side zip"
+    },
+    "reviews": [
+      "Amazing quality for the price point.",
+      "Wide leg silhouette is very flattering and comfortable.",
+      "The beige color is versatile and pairs well with everything.",
+      "Runs slightly long, may need hemming for petite frames."
+    ]
+  },
+  {
+    "id": "jacket-014",
+    "title": "Free People Dolman Quilted Jacket",
+    "brand": "Free People",
+    "category": "jackets",
+    "price": 168.0,
+    "availability": true,
+    "region": "US",
+    "color": "rust",
+    "sizes": ["XS", "S", "M", "L"],
+    "eco_score": 0.39,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "quilted cotton blend",
+      "fill": "lightweight polyester fill",
+      "fit": "dolman sleeve with snap closure"
+    },
+    "reviews": [
+      "The quilted pattern is unique and eye-catching.",
+      "Lightweight but surprisingly warm for fall weather.",
+      "The dolman sleeves give a relaxed bohemian vibe.",
+      "Rust color is stunning and gets many compliments."
+    ]
+  },
+  {
+    "id": "skirt-015",
+    "title": "J.Crew Pleated A-Line Midi Skirt",
+    "brand": "J.Crew",
+    "category": "skirts",
+    "price": 118.0,
+    "availability": false,
+    "region": "US",
+    "color": "burgundy",
+    "sizes": ["0", "2", "4", "6", "8", "10", "12"],
+    "eco_score": 0.43,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "100% polyester crepe",
+      "fit": "A-line with knife pleats",
+      "waist": "sits at natural waist with side zip"
+    },
+    "reviews": [
+      "The pleats add beautiful movement when walking.",
+      "Sits perfectly at the waist without slipping down.",
+      "The burgundy shade is deep and rich, perfect for fall.",
+      "Versatile enough for work and weekend outings."
+    ]
+  },
+  {
+    "id": "dress-016",
+    "title": "Zara Ribbed Knit Midi Dress",
+    "brand": "Zara",
+    "category": "dresses",
+    "price": 45.90,
+    "availability": true,
+    "region": "EU",
+    "color": "black",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.35,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "62% viscose 38% polyamide ribbed knit",
+      "fit": "body-conscious midi length",
+      "neckline": "crew neck, sleeveless"
+    },
+    "reviews": [
+      "Hugs curves in all the right places.",
+      "Incredibly affordable for such a polished look.",
+      "The ribbed texture adds visual interest to a simple silhouette.",
+      "Comfortable enough for all-day wear."
+    ]
+  },
+  {
+    "id": "jacket-017",
+    "title": "Patagonia Nano Puff Insulated Jacket",
+    "brand": "Patagonia",
+    "category": "jackets",
+    "price": 199.0,
+    "availability": true,
+    "region": "US",
+    "color": "navy",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.95,
+    "is_sustainable": true,
+    "specs": {
+      "fabric": "recycled polyester ripstop shell",
+      "insulation": "60g PrimaLoft Gold Eco",
+      "features": "packable into internal chest pocket"
+    },
+    "reviews": [
+      "Packs down incredibly small for travel.",
+      "Keeps me warm in surprisingly cold conditions.",
+      "Love that it uses recycled materials throughout.",
+      "The navy color is classic and never goes out of style.",
+      "Zipper quality is excellent and runs smooth."
+    ]
+  },
+  {
+    "id": "dress-018",
+    "title": "Anthropologie Maeve Flounce Dress",
+    "brand": "Anthropologie",
+    "category": "dresses",
+    "price": 148.0,
+    "availability": true,
+    "region": "US",
+    "color": "floral",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.47,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "100% rayon, exclusive floral print",
+      "fit": "relaxed with elasticized waist",
+      "hem": "flounce ruffle hem detail"
+    },
+    "reviews": [
+      "The floral print is whimsical and truly unique.",
+      "Flounce hem adds playful movement to every step.",
+      "Fits true to size with a comfortable elasticized waist.",
+      "Received so many compliments wearing this to a garden party."
+    ]
+  },
+  {
+    "id": "active-019",
+    "title": "Lululemon Define Jacket",
+    "brand": "Lululemon",
+    "category": "activewear",
+    "price": 128.0,
+    "availability": false,
+    "region": "US",
+    "color": "dark olive",
+    "sizes": ["2", "4", "6", "8", "10", "12"],
+    "eco_score": 0.42,
+    "is_sustainable": false,
+    "specs": {
+      "fabric": "Luon fabric, four-way stretch",
+      "fit": "slim, hip length",
+      "features": "thumb holes, secure zipper pockets"
+    },
+    "reviews": [
+      "The tailored fit makes this great for both gym and errands.",
+      "Thumb holes keep sleeves in place during workouts.",
+      "Dark olive is a beautiful neutral alternative to black.",
+      "Stretchy fabric moves with every motion without restriction."
+    ]
+  },
+  {
+    "id": "pant-020",
+    "title": "Everlane The Way-High Drape Pant",
+    "brand": "Everlane",
+    "category": "pants",
+    "price": 88.0,
+    "availability": true,
+    "region": "US",
+    "color": "black",
+    "sizes": ["XS", "S", "M", "L", "XL"],
+    "eco_score": 0.87,
+    "is_sustainable": true,
+    "specs": {
+      "fabric": "Japanese crepe, 100% recycled polyester",
+      "fit": "way-high rise, straight leg",
+      "care": "machine washable, wrinkle-resistant"
+    },
+    "reviews": [
+      "The drape on these pants is absolutely stunning.",
+      "High waist is flattering and stays in place all day.",
+      "Easy to dress up with heels or down with sneakers.",
+      "Fabric is lightweight but not sheer at all.",
+      "True to size with a comfortable straight leg."
+    ]
+  }
+]
