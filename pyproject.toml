@@ -17,7 +17,10 @@ dependencies = [
     "pillow>=10.4.0",
     "numpy>=1.26.0",
     "rich>=13.7.0",
+    "sentencepiece>=0.2.0",
+    "protobuf>=4.25.0",
 ]
+
 
 [project.optional-dependencies]
 dev = [

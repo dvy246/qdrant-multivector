@@ -1,4 +1,4 @@
-.PHONY: build up down test lint format
+.PHONY: build up down test lint format run-ui run-api
 
 build:
 	docker compose build --no-cache
@@ -24,3 +24,10 @@ lint:
 format:
 	uv run ruff check --fix .
 	uv run ruff format .
+
+run-ui:
+	PYTHONPATH=src uv run --extra ui streamlit run streamlit_app.py
+
+run-api:
+	PYTHONPATH=src uv run uvicorn commerce_engine.api:app --host 127.0.0.1 --port 8000
+
